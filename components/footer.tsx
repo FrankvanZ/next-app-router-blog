@@ -10,7 +10,7 @@ export function Footer() {
           <Link href="/about">About</Link>
         </nav>
 
-        <div className="flex items-center justify-center">
+        {/* <div className="flex items-center justify-center">
           <a
             target="_blank"
             href="https://twitter.com/nextjs"
@@ -20,7 +20,7 @@ export function Footer() {
           >
             <TwitterIcon className="h-8 w-8 fill-current" />
           </a>
-        </div>
+        </div> */}
 
         <div className="text-center">
           <p className="text-sm text-gray-500">

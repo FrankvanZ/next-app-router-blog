@@ -10,6 +10,7 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
+  CardTags,
   CardTitle,
 } from "@/components/card"
 
@@ -64,6 +65,18 @@ export default function Home() {
                 <ArrowRightIcon className="h-5 w-5" />
               </Link>
             </CardFooter>
+            {post.tags && (
+              <CardTags>
+                {post.tags.map((tag, index) => (
+                  <span
+                    className="font-small m-1 cursor-pointer rounded-lg bg-blue-400 px-3 text-center text-sm leading-loose text-white no-underline hover:bg-blue-500"
+                    key={index}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </CardTags>
+            )}
           </Card>
         </article>
       ))}

@@ -93,9 +93,9 @@ export default async function PostPage({ params }: PostProps) {
       </header>
       <hr className="my-6" />
       <Mdx code={post.body.code} />
-      <div className="mt-12">
+      {/* <div className="mt-12">
         <SharePost title={post.title} slug={post.slug} />
-      </div>
+      </div> */}
     </article>
   )
 }
