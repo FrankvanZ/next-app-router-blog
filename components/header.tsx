@@ -37,7 +37,7 @@ export function Header() {
               <div className="space-x-6 text-sm font-medium">
                 <Link href="/">Home</Link>
                 <Link href="/about">About</Link>
-                <Link href="/categories">Categories</Link>
+                {/* <Link href="/categories">Categories</Link> */}
                 {/* <Link href="/tags">Tags</Link> */}
               </div>
             </div>
