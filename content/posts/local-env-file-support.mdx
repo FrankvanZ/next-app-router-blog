@@ -1,0 +1,38 @@
+---
+title: Enabling .env.local files with xm cloud foundation starter kit
+description: How to get .env.local files working with the xm cloud foundation starter kit
+date: "2024-01-04"
+category: Sitecore
+image: /posts/xmcloud_docker.jpg
+tags:
+  - Sitecore
+  - "Xm Cloud"
+  - Next.js
+  - Docker
+---
+
+# Introduction
+When I started out working with xm cloud for the first time I was riding solo and didn't really need to concern myself too much with which variables would be different between developers.
+Simply because I was working on a POC. At some point in time however there must come a time for other developers to join the project. 
+That's a proper time to consider which variables you'd want to be part of an .env.local file. 
+There you might run into a problem, because working with multiple env files is not something that the starter kit supports out of the box.
+
+# The problem
+within the powershell scripts provided there are multiple docker commands scattered, and none of those make it obvious how to work with environment files. Why? 
+That's because every docker command *assumes* that an .env file is present. 
+I haven't worked extensively enough with docker that I know all of those things by heart so it would have been nice to make it explicit.
+Take for example this docker command: `docker compose up -d`. We could make it more explicit as follows: `docker compose --env-file .env up -d`.
+Which leads me to:
+
+# The solution
+Expanding on the explicit command from before we can actually provide it with another environment file by just repeating the --env.file parameter!
+The result? `docker compose --env-file .env --env-file .env.local up -d`. We got to repeat this for all the docker compose commands, which is a tad bit bothersome.
+So make sure you check your up script to amend (the 3) docker compose commands with the addition of all the env files you want to give it.
+This also needs to be done for the down script. Now ideally I would have used the env_file option within the docker compose yaml file, but this one has a different use case.
+env_file within the yaml is used for containers and the --env-file parameter from the CLI command is used for compose actions. To run your xmcloud instance locally we need the CLI command so we're stuck with the --env.file option.
+
+## Suggestions for .env.local parameters
+I want to leave you with a couple suggestions on which parameters to put in a local env file:
+- `HOST_LICENSE_FOLDER` is a great one, because that way nobody has to have a dedicated folder to put their license file in. 
+- `SITECORE_API_KEY_xmcloudpreview` is another good candidate so you don't put API keys in source control (or the git history)
+- `JSS_EDITING_SECRET` for the same reason as above
