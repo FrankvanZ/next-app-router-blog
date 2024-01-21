@@ -1,0 +1,49 @@
+---
+title: Working with content tokens in XM Cloud
+description: With no OOTB support for SXA content tokens in XM Cloud, how do we utilize this feature still?
+date: "2024-01-19"
+category: Sitecore
+image: /posts/sxa.png
+tags:
+  - Sitecore
+  - "Xm Cloud"
+  - Next.js
+  - SXA
+---
+
+# Introduction
+I've been working in the Sitecore headless space on and off for the past 3 years for multiple companies. 
+Currently I'm resposible for helping a bank transition from Sitecore XP 10.3 on premise, traditional MVC towards a headless architecture. 
+During this assignment the brief has changed from POC, to succesful POC, to let's rebuild the existing site using headless (in a Sitecore managed cloud setting), to greenfield rebranding the site and go with XMC. 
+It's been quite a journey and each and every time the brief changed, new challenges arrived, all of which I liked, because give me a challenging puzzle and I'm a happy camper.
+
+# Challenges
+The most recent surprising challenge I had to tackle was that in sitecore headless world the recommendation is to build SXA components so that you're compatible with XMC, should you ever choose to go that route, but the feature set of headless SXA isn't a complete mirror of what is available in SXA MVC. 
+One of the omissions is (custom) content tokens for example. In Sitecore SXA 1.9+ we could quite easily create, update and utilize content tokens throughout our datasources. 
+There was even a nice button for them in the RTE! I found it quite surprising that this feature was omitted when forking from the xmcloud-foundation-head. 
+Some digging made me aware that headless isn't that 1 on 1 copy of good ol' SXA which I hoped. 
+
+# Journey into the unknown
+Seeing as that XMC strongly advises against working with platform customizations (even though you can) I had to come up with a different approach. 
+Because working for a client in the financial space, where interest rates need to be communicated to (potential) customers throughout the whole site in different places, content replacement tokens are your friend.
+So with customizations not being an option the only option I had was to get into the weeds of how to get this to work on the Nextjs side of things. 
+So I first went with digging through some documentation (as one does) and quickly came across the personalization addon documentation. 
+There I found mention of it relying on middleware, so that's where I started my journey. 
+Nextjs middleware is a powerfull tool, and it's a good thing to understand it's use cases and how it works. 
+Ultimately though it's not the place to tackle this specific issue, because I found no way of accessing the layoutdata wich is a necessity for getting (custom) content tokens to work.
+I did however learn lots and found that the Plugin system that Sitecore created is built with great care and gives developers the oppertunity to hook into that ecosystem quite easily. 
+This same plugin system is also available at the page props factory part of the Nextjs application. 
+Great news for us, because there we do have access to the layoutdata.
+
+# Conclusion
+So in the end I came up with my own plugin for the page-props-factory. 
+This plugin is by no means perfect, but it showcases how the plugin system can be extended with logic to fit your (clients) needs. 
+Seeing as this is already a lengthy blogpost I'll save the implementation for later and part with some final thoughts for now.
+
+# Final thoughts
+1. learning the plugin system on the Nextjs side of things is going to open up some doors in getting things done, so invest some time to really understand how it works and what you can leverage there.
+2. If you need to manipulate layoutdata in some way or another Nextjs middleware isn't going to be the entrypoint you're looking for. 
+Middleware is mainly used for hooking into the Request and Response interfaces of the Fetch API. 
+The reason it's mentioned in the personalization addon is because for each personalization a custom "page personalization url" is generated, and the middleware uses the response url rewrite feature to show the contents of the page personalization url when a personalization is activated on a page.
+
+That's it for now, stay tuned for the code in part 2!
