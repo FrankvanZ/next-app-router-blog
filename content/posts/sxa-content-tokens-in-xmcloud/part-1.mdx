@@ -1,5 +1,5 @@
 ---
-title: Working with content tokens in XM Cloud
+title: Working with content tokens in XM Cloud - Part 1
 description: With no OOTB support for SXA content tokens in XM Cloud, how do we utilize this feature still?
 date: "2024-01-19"
 category: Sitecore
@@ -41,7 +41,7 @@ This plugin is by no means perfect, but it showcases how the plugin system can b
 Seeing as this is already a lengthy blogpost I'll save the implementation for later and part with some final thoughts for now.
 
 # Final thoughts
-1. learning the plugin system on the Nextjs side of things is going to open up some doors in getting things done, so invest some time to really understand how it works and what you can leverage there.
+1. Learning the plugin system on the Nextjs side of things is going to open up some doors in getting things done, so invest some time to really understand how it works and what you can leverage there.
 2. If you need to manipulate layoutdata in some way or another Nextjs middleware isn't going to be the entrypoint you're looking for. 
 Middleware is mainly used for hooking into the Request and Response interfaces of the Fetch API. 
 The reason it's mentioned in the personalization addon is because for each personalization a custom "page personalization url" is generated, and the middleware uses the response url rewrite feature to show the contents of the page personalization url when a personalization is activated on a page.
