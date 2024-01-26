@@ -1,0 +1,215 @@
+---
+title: Working with content tokens in XM Cloud - Part 2
+description: With no OOTB support for SXA content tokens in XM Cloud, how do we utilize this feature still?
+date: "2024-01-26"
+category: Sitecore
+image: /posts/sxa.png
+tags:
+  - Sitecore
+  - "Xm Cloud"
+  - Next.js
+  - SXA
+---
+
+# Recap
+In the [previous post](https://www.technophilian.com/posts/sxa-content-tokens-in-xmcloud/part-1) I outlined which direction I took in order to get to utilizing (custom) content tokens in headless SXA. 
+At the time of writing we had just heard back from Sitecore support. Their answer was: 
+`After consulting with our development team, it has been confirmed that this functionality is not currently supported in the XM Cloud environment. However a feature request for the inclusion of this functionality has been submitted for future XM Cloud releases`. 
+So a good thing that we can make use of the plugin system in the meanwhile. I promised all of the code for my solution in part 2, here we are, so let's code!
+
+# The solution
+As described in part-1 we want to hook into the Plugin system of the page-props-factory. 
+All we have to do in order to get there is create a file under `src/lib/page-props-factory/plugins`.
+In this particular case I decided to name it `content-replace.ts`. It needs to be a class and needs to implement `Plugin`.
+A plugin needs to have an order and contain an async function called exec with signature `async exec(props: SitecorePageProps, context: GetServerSidePropsContext | GetStaticPropsContext)`.
+I needed some utility functions which I didn't want to put in the same file so I ended up putting the utility functions under `src/lib/functions`.
+You *MUST NOT* put these utility functions in a sub-folder of the plugins folder! They will be falsely recognized as plugins too, which breaks because no exec is going to be defined in those.
+
+```ts:content-replace.ts showLineNumbers
+import { GetServerSidePropsContext, GetStaticPropsContext } from 'next';
+import { Plugin } from '..';
+import { SitecorePageProps } from 'lib/page-props';
+import { replaceContent } from '../../functions/replacecontent';
+
+class ContentReplacePlugin implements Plugin {
+  // This has been set to 4 for now, because the highest order number Sitecore defines is 3.
+  // I opted to let this plugin execute AFTER Sitecore plugins have run
+  order = 4;
+
+  async exec(props: SitecorePageProps, context: GetServerSidePropsContext | GetStaticPropsContext) {
+    if (context.preview) return props;
+
+    replaceContent(props.layoutData, props.dictionary);
+
+    return props;
+  }
+}
+
+export const contentReplacePlugin = new ContentReplacePlugin();
+```
+
+This plugin automatically gets recognized by the catch-all import in `index.ts` under `src/lib/page-props-factory`. 
+Note that for simplicity I've decided to put my content tokens in the dictionary (line 14, 2nd argument)! 
+This way we don't need another roundtrip to Sitecore to fetch the tokens from a predefined place.
+Now let's look at the replaceContent function.
+
+# Helper functions
+
+```ts:replacecontent.ts showLineNumbers
+import {
+  LayoutServiceData,
+  ComponentRendering,
+  HtmlElementRendering,
+  PlaceholdersData,
+  ComponentFields,
+  Field,
+  Item,
+  DictionaryPhrases,
+} from '@sitecore-jss/sitecore-jss-nextjs';
+import { isField, isItem, isItemArray, isTextField } from './sitecore-type-check';
+
+const regex = /\$\(\w.*?\)/g;
+
+export function replaceContent(layout: LayoutServiceData, dictionary: DictionaryPhrases) {
+  const placeholders = layout.sitecore.route?.placeholders;
+  if (Object.keys(placeholders ?? {}).length === 0) {
+    return;
+  }
+  if (placeholders) {
+    Object.keys(placeholders).forEach((placeholder) => {
+      placeholders[placeholder] = contentReplacePlaceholder(placeholders[placeholder], dictionary);
+    });
+  }
+}
+
+function contentReplacePlaceholder(
+  components: Array<ComponentRendering | HtmlElementRendering>,
+  dictionary: DictionaryPhrases
+): Array<ComponentRendering | HtmlElementRendering> {
+  {
+    let result = components
+      .map((component) => {
+        const rendering = component as ComponentRendering;
+        const fields = rendering.fields as ComponentFields;
+
+        contentReplaceFields(fields, dictionary);
+
+        if (rendering.placeholders) {
+          const placeholders = rendering.placeholders as PlaceholdersData;
+
+          Object.keys(placeholders).forEach((placeholder) => {
+            placeholders[placeholder] = contentReplacePlaceholder(
+              placeholders[placeholder],
+              dictionary
+            );
+          });
+        }
+
+        return component;
+      })
+      .filter(Boolean);
+
+    return result;
+  }
+}
+function contentReplaceField(field: Field, dictionary: DictionaryPhrases) {
+  if (isTextField(field)) {
+    let val = field.value as string;
+    const match = regex.exec(val);
+    if (match) {
+      field.value = val.replace(regex, (matched) =>
+        dictionary[matched] !== undefined ? dictionary[matched] : matched
+      );
+    }
+  }
+}
+
+function contentReplaceFields(fields: ComponentFields, dictionary: DictionaryPhrases) {
+  Object.keys(fields).forEach((field) => {
+    if (isField(fields[field])) contentReplaceField(fields[field] as Field, dictionary);
+    else if (isItem(fields[field])) contentReplaceItem(fields[field] as Item, dictionary);
+    else if (isItemArray(fields[field])) contentReplaceItems(fields[field] as Item[], dictionary);
+  });
+}
+
+function contentReplaceItem(item: Item, dictionary: DictionaryPhrases) {
+  Object.keys(item.fields).forEach((field) => {
+    contentReplaceField(item.fields[field] as Field, dictionary);
+  });
+}
+
+function contentReplaceItems(items: Item[], dictionary: DictionaryPhrases) {
+  items.forEach((item) => {
+    contentReplaceItem(item, dictionary);
+  });
+}
+```
+
+A few points of interest here: line 13 is the regex to scan which tokens to replace. This one scans for the format `$(word)`. 
+At some point I'll have to write some test cases to make sure nothing unexpected is matched, for now I made sure that `$($(word))` would only replace the inner match (if any).
+If you come up with a better (more secure / narrow) regex please feel free to reach out!
+
+Line 63 makes sure that only tokens we've got available from the dictionary are replaced, otherwise just return the token itself.
+
+Line 20 makes sure we loop over all placeholders and start filtering down to components and eventually fields. 
+This has been inspired by how the [layout personalization](https://github.com/Sitecore/jss/blob/dev/packages/sitecore-jss/src/personalize/layout-personalizer.ts) code of Sitecore itself works. 
+It also gave me the input to shape the types needed for the utility functions and in the end I managed to stay quite close to what Sitecore already exposes!
+The field types I decided to check against were TextField types, but for that I needed some more utility functions:
+
+```ts:sitecore-type-check.ts showLineNumbers
+import { Field, Item } from '@sitecore-jss/sitecore-jss-nextjs';
+
+export function isField(field: Field | Item | Item[]): field is Field {
+  if (typeof field !== 'object') return false;
+  if (Array.isArray(field)) return false;
+
+  return (field as Field).value !== undefined;
+}
+
+export function isItem(field: Field | Item | Item[]): field is Item {
+    if (typeof field !== 'object') return false;
+    if (Array.isArray(field)) return false;
+
+    return (field as Item).fields !== undefined;
+}
+
+export function isItemArray(field: Field | Item | Item[]): field is Item[] {
+    if (!Array.isArray(field)) return false;
+
+    return (field as Item[]).every(isItem);
+}
+
+export function isTextField(field: Field): boolean {
+    return typeof field.value === 'string';
+}
+```
+
+These type check functions operate on the `ComponentFields` interface definition. So this is the shape of the layoutData we can expect!
+It checks whether or not there is a key named `value` on the object received to see if it's a field or not and so on and so forth. 
+It's not the most elegant solution in the world, but it works and is relatively safe. 
+Full disclosure though: there are fields which might get checked even though you wouldn't want those to be checked. 
+In the project I'm working on we're using Leprechaun for automatic type generation, based on their generation setup for JSS these would be the types that get checked (because they all adhere to the `Field<string>` schema):
+
+1. Datetime
+2. Droplist
+3. Grouped droplist
+4. Rich Text
+5. Single-line text
+6. Multi-line text
+
+and the ones marked by Sitecore as obsolete:
+
+7. html
+8. memo
+9. valuelookup
+10. text
+
+and finally the developer type(s):
+
+11. frame
+
+Personally I'm not too worried about the obsolete types, we're not using those anyways and for the other ones I'd be surprised if a `$(token)` snuck it's way in.
+
+# Conclusion
+With this solution we can now put our $(customToken) in the dictionary and have them replaced in our textfields and manage frequently reused content in a centralized manner again, just as we were used to in the old days of SXA!
+I hope you found this blog useful and please if you have some enhancements do reach out!
