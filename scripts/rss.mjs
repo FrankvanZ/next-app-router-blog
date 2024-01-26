@@ -18,25 +18,27 @@ const feed = new Feed({
   },
 })
 
-allPosts
+const descendingDatePosts = allPosts
   .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  .forEach((post) => {
-    const url = `https://technophilian.com/posts/${post._raw.flattenedPath}`
-    feed.addItem({
-      id: url,
-      link: url,
-      title: post.title,
-      description: post.description,
-      date: new Date(post.date),
-      category: [{ name: post.category }],
-      author: [
-        {
-          name: "Frank van Zutphen",
-          email: "",
-          link: "https://www.technophilian.com",
-        },
-      ],
-    })
+  .reverse()
+
+descendingDatePosts.forEach((post) => {
+  const url = `https://technophilian.com/posts/${post._raw.flattenedPath}`
+  feed.addItem({
+    id: url,
+    link: url,
+    title: post.title,
+    description: post.description,
+    date: new Date(post.date),
+    category: [{ name: post.category }],
+    author: [
+      {
+        name: "Frank van Zutphen",
+        email: "",
+        link: "https://www.technophilian.com",
+      },
+    ],
   })
+})
 
 writeFileSync("./public/rss.xml", feed.rss2(), { encoding: "utf-8" })
