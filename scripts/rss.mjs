@@ -1,4 +1,4 @@
-import { allPosts } from "contentlayer/generated"
+import { allPosts } from "../.contentlayer/generated/index.mjs"
 import { Feed } from "feed"
 import { writeFileSync } from "fs"
 
@@ -21,7 +21,7 @@ const feed = new Feed({
 allPosts
   .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   .forEach((post) => {
-    const url = `https://www.technophilian.com/posts/${post._raw.flattenedPath}`
+    const url = `https://technophilian.com/posts/${post._raw.flattenedPath}`
     feed.addItem({
       id: url,
       link: url,
@@ -29,7 +29,6 @@ allPosts
       description: post.description,
       date: new Date(post.date),
       category: [{ name: post.category }],
-      image: post.image,
       author: [
         {
           name: "Frank van Zutphen",
