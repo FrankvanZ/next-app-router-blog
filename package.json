@@ -48,6 +48,7 @@
     "typescript": "5.0.4"
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^6.13.2"
+    "@typescript-eslint/parser": "^6.13.2",
+    "feed": "^4.2.2"
   }
 }
