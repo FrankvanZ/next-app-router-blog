@@ -1,0 +1,46 @@
+---
+title: A better Pages experience and simplified front-end development
+description: Sitecore introduces an update to the Pages application for XM Cloud. With this change a better frontend development experience is upon us. A welcome new feature includes connecting to Pages from localhost!
+date: "2024-11-09"
+category: Sitecore
+image: /posts/Sitecore.png
+tags:
+  - Sitecore
+  - "Xm Cloud"
+  - Next.js
+  - Docker
+---
+
+# Introduction
+Connecting the Sitecore XM Cloud Pages used to be possible but a bit of a hassle. 
+[Jean-François L'Heureux's blogpost](https://www.jflh.ca/2023-11-21-introducing-sitecore-xm-cloud-extensions) about his written Google Chrome extension really helped the developer experience in that regard.
+He automated the procedures needed to connect your local host to Pages in a neat Google Chrome extension. However [JSS 22.1 has been released](https://developers.sitecore.com/changelog/xm-cloud/10092024/a-better-pages-experience-and-simplified-front-end-development) and it's a brave new world for XMC developers!
+
+# What to expect
+If you're using Sitecore XM Cloud, be ready to see a new addition to your Pages view:
+
+<Image
+  src="/posts/pages_update.png"
+  width="718"
+  height="404"
+  alt="Deploying Next.js Apps"
+/>
+
+This in and of itself does nothing unless you upgrade your XMC repository to 22.1. 
+It's a nice addition improving the developer experience, but also be a gem and warn your content editors that changing anything via this dropdown menu is a developer centric addition and doesn't help them.
+For reference if you're not running a JSS 22.1 version of Next.js this will be the experience trying to connect to localhost:
+
+<Image
+  src="/posts/pages_update_no_localhost.png"
+  width="718"
+  height="404"
+  alt="Deploying Next.js Apps"
+/>
+
+## Conclusion
+To make use of this new feature introduced to Pages make sure to upgrade your Next.js repository to JSS version 22.1!
+For further reading [Christian Hahn](https://www.linkedin.com/in/christian-hahn-209727131/) has 3 posts about the new metadata rendering mode written!
+
+[XM Cloud – Welcome the brand new Metadata Editing Mode for Pages (Part 1)](https://www.linkedin.com/posts/christian-hahn-209727131_xm-cloud-welcome-the-brand-new-metadata-activity-7236993881202913280-n_U7/?utm_source=share&utm_medium=member_desktop)
+[XM Cloud – Welcome the brand new Metadata Editing Mode for Pages (Part 2)](https://www.linkedin.com/posts/christian-hahn-209727131_xm-cloud-welcome-the-brand-new-metadata-activity-7239591737315241984-9G5x/?utm_source=share&utm_medium=member_desktop)
+[XM Cloud – Welcome the brand new Metadata Editing Mode for Pages (Part 3)](https://www.linkedin.com/posts/christian-hahn-209727131_xm-cloud-welcome-the-brand-new-metadata-activity-7239624035452530692-bpvG/?utm_source=share&utm_medium=member_desktop)
