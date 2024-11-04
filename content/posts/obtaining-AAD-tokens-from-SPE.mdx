@@ -1,0 +1,67 @@
+---
+title: Getting Azure AD tokens from Sitecore poweshell is easier than you might think
+description: 
+date: "2024-10-28"
+category: Sitecore
+image: /posts/spe.png
+tags:
+  - Sitecore
+  - "Xm Cloud"
+  - Powershell
+  - SPE
+---
+
+# Please your SOC and auth all the things!
+Authentication and authorization are concepts familiar to most programmers who've ever had to deal with securing API's. 
+I recently ran into a bit of a snafu where I thought to get away with API key authentication for a feature I'm building for a client. 
+However the security office said no, so I needed to re-think my strategy of calling the API I was building.
+The problem? I'm calling the API via Sitecore Powershell and my powershell knowledge is limited at best. 
+So for future me, as well as people who might struggle with Powershell here's a quick run-down of how easy it can be to get AAD tokens from Sitecore Powershell!
+
+# Invoke-WebRequest or Invoke-RestMethod?
+Calling API's from Powershell can be done by either the `Invoke-WebRequest` utility or the `Invoke-RestMethod` utility function. 
+Depending on the use-case you'll often find yourself reaching for `Invoke-WebRequest` more often than `Invoke-RestMethod`, 
+because it gives you the actual Response object which contains more than what `Invoke-RestMethod` returns.
+`Invoke-RestMethod` can be considered a a wrapper cmdlet around Invoke-WebRequest which does some automatic conversion for you to make life easier.
+If the API you are consuming returns JSON then Invoke-RestMethod will return a PowerShell Object reflecting the JSON result of said API.
+This means that if you're after some Headers or ETags that the API might return `Invoke-WebRequest` is your friend. 
+However for obtaining a simple AAD token I like the simplicity that `Invoke-RestMethod` brings.
+
+# The code
+```powershell:Get-AAD-Token.ps1 showLineNumbers
+function Get-AAD-Auth-Token {
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory=$true, Position=0 )]
+    [string]$authUrl,
+
+    [Parameter(Mandatory=$true, Position=1 )]
+    [string]$clientIld,
+	
+    [Parameter(Mandatory=$true, Position=2 )]
+    [string]$clientSecret,
+
+    [Parameter(Mandatory=$true, Position=3 )]
+    [string]$scope
+  )
+  begin {
+    Write-Verbose "Cmdlet Get-AAD-Auth-Token - Begin"
+  }
+  process {
+    Write-Verbose "Cmdlet Get-AAD-Auth-Token - Process"
+    Invoke-RestMethod $authUrl -Method POST -Body @{
+      grant_type = "client_credentials"
+      client_id = $clientId
+      client_secret = $clientSecret
+      scope = $scope
+    }
+  }
+  end {
+    Write-Verbose "Cmdlet Get-AAD-Auth-Token - End"
+  }
+}
+```
+
+This is a small little cmdlet that you can save to your Sitecore Powershell Script library for whenever you need to obtain an AAD token for whatever reason.
+Be sure to store your client_secret somewhere safe, for our use-case we opted to add this to the XMC environment via a config patch. 
+That way it's not that prone to errors introduced by content editors. 
