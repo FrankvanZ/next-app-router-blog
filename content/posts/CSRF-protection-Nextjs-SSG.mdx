@@ -1,0 +1,97 @@
+---
+title: Securing forms with CSRF protection in a Next.js app
+description: Cross Site Request Forgery (CSRF) is a possible attack vector to your site to which you want to safeguard. Techniques in standard server based SSR websites are well documented. How does safeguarding your site when it is statically generated work though? Read more and find out!
+date: "2024-12-09"
+category: Sitecore
+image: /posts/headless.png
+tags:
+  - Next.js
+  - Headless
+---
+
+# It's easier than you might think!
+Implementing safeguards against Cross Site Request Forgery (CSRF) in Next.js isn't as tough as you might think! 
+Most blogposts out there are either on the app-router architecture in Next.js, or assume that your Pages-router Next.js app is in SSR mode. 
+With the recommendation of building out a SSG application when building Next.js with Sitecore (either XP and headless or XMC), this is a nuisance.
+Why was there no ready, set, go! (and implement) blogpost already out there?
+<Image
+  src="/posts/doitmyself.webp"
+  alt="Fine I'll do it myself"
+/>
+My blogpost aims to solve that problem! 
+So... If you're on a Next.js app with the Pages-router architecture and are keen to find out how to implement a safeguard against a CSRF attack, read on!
+
+# Next-auth to the rescue!
+If the only thing you take away from this blogpost is the next bit of advise you'll be golden: use Next-auth as an npm package.
+<Image 
+  src="/posts/itjustworks.webp"
+  alt="Fine I'll do it myself"
+/>
+Next-auth has this beautiful helper function that describes perfectly what we're trying to solve:
+```ts:oneliner.ts
+import { getCsrfToken } from 'next-auth/react';
+```
+and with that you're basically almost there! 
+Now I wouldn't leave you hanging halfway. So let's look at an example.
+
+
+```ts:exampleForm.tsx showLineNumbers
+const [csrfToken, setCsrfToken] = useState<string | undefined>(undefined);
+const [formData, setFormData] = useState<FormData>({});
+
+useEffect(() => {
+    // Get CSRF token to use when submitting a form
+    if (!csrfToken) {
+      getCsrfToken().then((token) => {
+        if (token) {
+          setCsrfToken(token);
+
+          setFormData((prevState) => {
+            return {
+              ...prevState,
+              CSRFToken: token,
+            };
+          });
+        }
+      });
+    }
+  }, []);
+```
+
+above code example is the meat of the implementation. 
+Now all that is left to do is make sure you have a hidden input in your form which utilizes the state value stored in the csrfToken react useState hook.
+In the project I'm currently working on we utilize react-hook-form as a package so for us it looks a little something like this:
+
+```ts:hidden-input.tsx showLineNumbers
+import { useForm, SubmitHandler } from 'react-hook-form';
+const { handleSubmit, register, setValue, reset, control, watch, getValues } = useForm<FormData>({ defaultValues: formData, mode: 'onBlur' });
+const formRef = useRef<HTMLFormElement>(null);
+const submitHandler: SubmitHandler<FormData> = (data) = {
+  // your implementation here
+  ...
+}
+    
+<form noValidate={true} ref={formRef} onSubmit={handleSubmit(submitHandler)}>
+  <input type="hidden" {...register('CSRFToken')} />
+  ...
+  <input type="submit">submit</input>
+</form>
+```
+
+react-hook-form is a neat little package that works nicely with a ContextProvider.
+It's what we used to keep track of the FormData. 
+The register function is a part of react-hook-form and makes sure that any input field you register is being tracked and the values are loaded into the submitHandler when submitting the form.
+Obviously this above snippet is pseudo-code and won't work as-is, but it'll give you a starting point might you decide to go with react-hook-form to build out your forms!
+The beauty of this approach is, is that it's easy to implement and uses client-side code to grab the CSRF token for the current user-session from the Next.js server.
+Now all that's left to do is validating a few things: 
+1. Did a csrf token get sent with form submission? If not: send a HTTP 400 status code
+2. Did a csrf token get sent with form submission? If yes but no match: send a HTTP 400 satus code
+3. Did a csrf token get sent with form submission? If yes AND it matches: resume happy path execution!
+
+# Conclusion
+As we can see by: 
+- implementing a bit of state management with the useState hook for storing the CSRF token 
+- implementing the Next-auth npm package for getting access to the getCsrfToken helper function
+- implementing a useEffect hook for acquiring said csrfToken to go into a hidden input form field
+
+we can protect our SSG Next.js Pages-router site against CSRF attack vectors in less than a days work.
